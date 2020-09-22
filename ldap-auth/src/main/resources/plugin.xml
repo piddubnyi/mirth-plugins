@@ -5,16 +5,15 @@
   <mirthVersion>3.9.0, 3.8.1, 3.8.0</mirthVersion>
   <url>https://github.com/ChristopherSchultz/mirth-plugins/tree/master/ldap-auth</url>
   <description>Authenticates against an LDAP server.</description>
-<!--
+
   <clientClasses>
-    <string>net.christopherschultz.mirth.plugins.auth.ldap.LDAPAuthenticatorConfigurationClientPlugin</string>
+    <string>net.christopherschultz.mirth.plugins.auth.ldap.client.LDAPAuthenticatorConfigurationClientPlugin</string>
   </clientClasses>
- -->
-   <serverClasses>
-    <string>net.christopherschultz.mirth.plugins.auth.ldap.LDAPAuthenticatorPlugin</string>
+
+  <serverClasses>
+    <string>net.christopherschultz.mirth.plugins.auth.ldap.server.LDAPAuthenticatorPlugin</string>
   </serverClasses>
-<!--
-  <library type="CLIENT" path="cschultz-ldap-auth-client.jar" />
--->
-  <library type="SERVER" path="cschultz-ldap-auth-server.jar" />
+
+  <library type="CLIENT" path="cschultz-ldap-auth.jar" />
+  <library type="SERVER" path="cschultz-ldap-auth.jar" />
 </pluginMetaData>

@@ -38,29 +38,7 @@
       <scope>system</scope>
       <systemPath>${project.basedir}/libs/mirth-client.jar</systemPath>
     </dependency>
-<!--
-    <dependency>
-      <groupId>org.jdesktop</groupId>
-      <artifactId>swingx-core</artifactId>
-      <version>1.6.2</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/libs/swingx-core-1.6.2.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>net.miginfocom</groupId>
-      <artifactId>miglayout-swing</artifactId>
-      <version>4.2</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/libs/miglayout-swing-4.2.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>net.miginfocom</groupId>
-      <artifactId>miglayout-core</artifactId>
-      <version>4.2</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/libs/miglayout-core-4.2.jar</systemPath>
-    </dependency>
--->
+
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>

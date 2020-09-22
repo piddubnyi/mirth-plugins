@@ -1,4 +1,4 @@
-package net.christopherschultz.mirth.plugins.auth.ldap;
+package net.christopherschultz.mirth.plugins.auth.ldap.server;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +15,8 @@ import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
+
+import net.christopherschultz.mirth.plugins.auth.ldap.Constants;
 import org.apache.log4j.Logger;
 
 import com.mirth.connect.client.core.ControllerException;
@@ -30,9 +32,7 @@ import com.mirth.connect.model.User;
  * An LDAP authenticator for Mirth Connect.
  *
  */
-public class LDAPAuthenticatorPlugin
-    implements AuthorizationPlugin, ServicePlugin
-{
+public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlugin {
     private static final String DEFAULT_CONTEXT_FACTORY_CLASS_NAME = "com.sun.jndi.ldap.LdapCtxFactory";
     private static final int DEFAULT_RETRIES = 3;
     private static final int MAX_RETRIES = 100;
@@ -68,6 +68,11 @@ public class LDAPAuthenticatorPlugin
     @Override
     public ExtensionPermission[] getExtensionPermissions() {
         return null;
+    }
+
+    @Override
+    public Map<String, Object> getObjectsForSwaggerExamples() {
+        return new HashMap<>();
     }
 
     @Override
