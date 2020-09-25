@@ -22,9 +22,11 @@
 .classpath
 .project
 .settings/
-target/
-!target/cschultz-ldap-auth.jar
 keystore.p12
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+/ldap-auth/target/classes/
+/ldap-auth/target/generated-sources/
+/ldap-auth/target/maven-archiver/
+/ldap-auth/target/maven-status/
