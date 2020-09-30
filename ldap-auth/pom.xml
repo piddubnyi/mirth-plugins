@@ -122,10 +122,10 @@
         </executions>
         <configuration>
           <storetype>JKS</storetype>
-          <keystore>test.jks</keystore>
-          <alias>test</alias>
-          <keypass>test</keypass>
-          <storepass>test</storepass>
+          <keystore>vireq.jks</keystore>
+          <alias>vireq</alias>
+          <keypass>Sommer2020</keypass>
+          <storepass>Sommer2020</storepass>
         </configuration>
       </plugin>
     </plugins>
