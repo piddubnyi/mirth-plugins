@@ -1,11 +1,15 @@
 package net.christopherschultz.mirth.plugins.auth.ldap.server;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import com.mirth.connect.client.core.ControllerException;
+import com.mirth.connect.model.ExtensionPermission;
+import com.mirth.connect.model.LoginStatus;
+import com.mirth.connect.model.User;
+import com.mirth.connect.plugins.AuthorizationPlugin;
+import com.mirth.connect.plugins.ServicePlugin;
+import com.mirth.connect.server.controllers.ControllerFactory;
+import com.mirth.connect.server.controllers.UserController;
+import net.christopherschultz.mirth.plugins.auth.ldap.Constants;
+import org.apache.log4j.Logger;
 
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
@@ -15,22 +19,15 @@ import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
-
-import net.christopherschultz.mirth.plugins.auth.ldap.Constants;
-import org.apache.log4j.Logger;
-
-import com.mirth.connect.client.core.ControllerException;
-import com.mirth.connect.plugins.AuthorizationPlugin;
-import com.mirth.connect.plugins.ServicePlugin;
-import com.mirth.connect.server.controllers.ControllerFactory;
-import com.mirth.connect.server.controllers.UserController;
-import com.mirth.connect.model.ExtensionPermission;
-import com.mirth.connect.model.LoginStatus;
-import com.mirth.connect.model.User;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * An LDAP authenticator for Mirth Connect.
- *
  */
 public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlugin {
     private static final String DEFAULT_CONTEXT_FACTORY_CLASS_NAME = "com.sun.jndi.ldap.LdapCtxFactory";
@@ -49,7 +46,9 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
     private int _retries;
     private long _retryInterval;
     private boolean _fallbackToLocalAuthentication = false;
-    private Map<String,String> _usernameMap;
+
+    private boolean notInitializedYet = true;
+    private Map<String, String> _usernameMap;
     private String _usernameTemplate;
 
     public String getPluginPointName() {
@@ -58,7 +57,7 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
 
     @Override
     public Properties getDefaultProperties() {
-        if(logger.isTraceEnabled()) {
+        if (logger.isTraceEnabled()) {
             logger.trace("getDefaultProperties called");
         }
 
@@ -78,31 +77,35 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
     @Override
     public void init(Properties props) {
         Properties localProperties = new Properties(props);
+        logger.info("Initial properties:" + localProperties);
         // Load the configuration from ldap.properties and return it.
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("ldap.properties")) {
-            if(null == in) {
-                if(logger.isDebugEnabled()) {
+            if (null == in) {
+                if (logger.isDebugEnabled()) {
                     logger.debug("No local ldap.properties found; using database configuration with " + props.size() + " items");
                 }
             } else {
-                if(logger.isTraceEnabled()) {
+                if (logger.isTraceEnabled()) {
                     logger.trace("Found local ldap.properties file; merging with database configuration");
                 }
 
                 localProperties.load(in);
 
-                if(logger.isTraceEnabled()) {
+                if (logger.isTraceEnabled()) {
                     logger.trace("Loaded " + localProperties.size() + " items from local ldap.properties; merged with " + props.size() + " items from database");
                 }
             }
         } catch (IOException ioe) {
             logger.error("Failed to read LDAP configuration from ldap.properties", ioe);
         }
-
+        if (localProperties.size() != 0) {
+            notInitializedYet = false;
+        }
         configure(localProperties);
     }
 
     private void configure(Properties props) {
+        logger.info("Configuring using properties:" + props);
         int tries = DEFAULT_RETRIES;
         long retryInterval = DEFAULT_RETRY_INTERVAL;
         try {
@@ -119,13 +122,13 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
         }
 
         // Sanity-checks
-        if(tries < 1)
+        if (tries < 1)
             tries = 1;
-        else if(tries > MAX_RETRIES)
+        else if (tries > MAX_RETRIES)
             tries = MAX_RETRIES;
-        if(retryInterval < 0)
+        if (retryInterval < 0)
             retryInterval = 0;
-        else if(retryInterval > MAX_RETRY_INTERVAL)
+        else if (retryInterval > MAX_RETRY_INTERVAL)
             retryInterval = MAX_RETRY_INTERVAL;
 
         setContextFactoryClassName(props.getProperty(Constants.LDAP_CONTEXT_FACTORY_CLASS_NAME, DEFAULT_CONTEXT_FACTORY_CLASS_NAME));
@@ -145,6 +148,7 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
                 || "yes".equalsIgnoreCase(s)
                 ;
     }
+
     @Override
     public void update(Properties props) {
         init(props);
@@ -160,6 +164,7 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
         _contextFactoryClassName = className;
 
     }
+
     public String getContextFactoryClassName() {
         return _contextFactoryClassName;
     }
@@ -195,8 +200,9 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
     public String getGroupFilterTemplate() {
         return _groupFilterTemplate;
     }
+
     public void setRetries(int retries) {
-        if(retries < 1 || retries > MAX_RETRIES)
+        if (retries < 1 || retries > MAX_RETRIES)
             throw new IllegalArgumentException("Illegal retry value: " + retries);
 
         _retries = retries;
@@ -207,7 +213,7 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
     }
 
     public void setRetryInterval(long retryInterval) {
-        if(retryInterval < 0 || retryInterval > MAX_RETRY_INTERVAL)
+        if (retryInterval < 0 || retryInterval > MAX_RETRY_INTERVAL)
             throw new IllegalArgumentException("Illegal retry interval: " + retryInterval);
 
         _retryInterval = retryInterval;
@@ -230,7 +236,7 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
     }
 
     public void setUsernameTemplate(String template) {
-        if(null == template || 0 == template.trim().length() || "{username}".equals(template)) {
+        if (null == template || 0 == template.trim().length() || "{username}".equals(template)) {
             _usernameTemplate = null;
         } else {
             _usernameTemplate = template;
@@ -238,17 +244,17 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
     }
 
     public void setUsernameMap(String mapString) {
-        if(null == mapString || 0 == mapString.trim().length()) {
+        if (null == mapString || 0 == mapString.trim().length()) {
             _usernameMap = null;
         } else {
             String[] maps = mapString.split("\\s*(?<!\\\\),\\s*"); // Split on comma using \ as an escape character
 
-            HashMap<String,String> map = new HashMap<String,String>(maps.length);
+            HashMap<String, String> map = new HashMap<String, String>(maps.length);
 
-            for(String mapped: maps) {
+            for (String mapped : maps) {
                 String[] split = mapped.split("\\s*(?<!\\\\)=\\s*"); // Split on equals using \ as an escape character
 
-                if(2 == split.length) {
+                if (2 == split.length) {
                     map.put(split[0], split[1]);
                 } else {
                     logger.warn("Ignoring confusing mapping: " + mapped);
@@ -259,87 +265,57 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
         }
     }
 
-    public Map<String,String> getUsernameMap() {
+    public Map<String, String> getUsernameMap() {
         return _usernameMap;
     }
 
     /**
-     * Map a user's username from the original user-supplied username
-     * to one that should be used when authenticating to LDAP.
-     *
-     * @param username The username to map.
-     *
-     * @return The mapped username, which may be unchanged.
-     */
-    public String mapUsername(String username) {
-        if(null == username)
-            return null;
-
-        String mappedUsername;
-
-        Map<String,String> map = getUsernameMap();
-        if(null != map) {
-            mappedUsername = map.get(username);
-
-            if(null == mappedUsername) {
-                mappedUsername = username;
-            }
-        } else {
-            mappedUsername = username;
-        }
-
-        String template = getUsernameTemplate();
-        if(null != template)
-            mappedUsername = template.replace("{username}", mappedUsername);
-
-        return mappedUsername;
-    }
-
-    /**
      * Authenticates the user against the LDAP server.
-     *
+     * <p>
      * If {@link #getFallbackToLocalAuthentication()} is <code>true</code>,
      * then authentication failures will return in this method returning
      * <code>null</code> which will cause Mirth to perform local-database
      * authentication.
      *
      * @return SUCCESS if the user was correctly authenticated, or either
-     *         FAIL if the authentication or <code>null</code> if the
-     *         authentication failed, depending upon the value of
-     *         {@link #getFallbackToLocalAuthentication()}.
+     * FAIL if the authentication or <code>null</code> if the
+     * authentication failed, depending upon the value of
+     * {@link #getFallbackToLocalAuthentication()}.
      */
     public LoginStatus authorizeUser(String username, String plainPassword) throws ControllerException {
+        if(_fallbackToLocalAuthentication){
+            return null;
+        }
+        if (notInitializedYet) {
+            _fallbackToLocalAuthentication = true;
+            return new LoginStatus(
+                    LoginStatus.Status.FAIL,
+                    "LDAP is not configured yet. " +
+                            "Please login as admin and configure LDAP properties. " +
+                            "Falling back to mirth-user log-in"
+            );
+        }
         int tries = getRetries();
         long retryInterval = getRetryInterval();
 
-        String mappedUsername = mapUsername(username);
-        if(!username.equals(mappedUsername)) {
-            if(logger.isDebugEnabled()) {
-                logger.debug("Mapped incoming username from " + username + " to " + mappedUsername);
-            }
-        }
-
-        while(tries > 0) {
+        while (tries > 0) {
             try {
                 // We can either connect with an anonymous and/or admin DN and go
                 // from there, or we can connect as the user trying to authenticate.
                 //
                 // Let's try the direct approach for now.
 
-                performUserAuthenticationAndAuthorization(mappedUsername, plainPassword);
+                performUserAuthenticationAndAuthorization(username, plainPassword);
 
-                if(logger.isTraceEnabled()) {
-                    logger.trace("Successfully authenticated " + mappedUsername
-                                 + " using server " + getURL());
-                }
+                logger.info("Successfully authenticated " + username + " using server " + getURL());
 
                 // Check to see if we need to create a new local user
                 UserController uc = ControllerFactory.getFactory().createUserController();
 
                 User user = uc.getUser(null, username);
 
-                if(null == user) {
-                    if(logger.isDebugEnabled()) {
+                if (null == user) {
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Must create new local user for " + username);
                     }
 
@@ -352,34 +328,26 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
 
                 return new LoginStatus(LoginStatus.Status.SUCCESS, null);
             } catch (NamingException ne) {
-                if(getFallbackToLocalAuthentication()) {
-                    if(logger.isDebugEnabled())
-                        logger.debug("Failed to authenticate " + username
-                                     + " using server " + getURL()
-                                     + "; falling-back to local authentication", ne);
-
+                if (getFallbackToLocalAuthentication()) {
+                    logger.info("Failed to authenticate " + username + " using server " + getURL() + "; falling-back to local authentication", ne);
                     return null;
                 } else {
-                    if(logger.isTraceEnabled())
-                        logger.trace("Failed to authenticate " + username
-                                     + " using server " + getURL(), ne);
-
+                    logger.trace("Failed to authenticate " + username + " using server " + getURL(), ne);
                     return new LoginStatus(LoginStatus.Status.FAIL, ne.getMessage());
                 }
             } catch (Exception e) {
                 logger.error("Error during LDAP authentication attempt; re-trying", e);
             }
             tries--;
-            try { Thread.sleep(retryInterval); } catch (InterruptedException ie) { }
+            try {
+                Thread.sleep(retryInterval);
+            } catch (InterruptedException ie) {
+            }
         }
 
         // Authentication did not succeed after X tries
-        if(getFallbackToLocalAuthentication()) {
-            if(logger.isDebugEnabled())
-                logger.debug("Failed to authenticate " + username
-                             + " using server " + getURL()
-                             + "; falling-back to local authentication");
-
+        if (getFallbackToLocalAuthentication()) {
+            logger.debug("Failed to authenticate " + username + " using server " + getURL() + "; falling-back to local authentication");
             return null;
         } else {
             return new LoginStatus(LoginStatus.Status.FAIL, null);
@@ -388,21 +356,18 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
 
     /**
      * Authenticates against an LDAP server using the user's credentials directly.
-     *
+     * <p>
      * The username should be "bare" and will be converted into a dn by using
      * the {@link #LDAP_USER_DN_TEMPLATE}.
      *
      * @param username The user's username
      * @param password The user's password
-     *
      * @return The username to use in the Mirth database
-     *
      * @throws NamingException If there is an error
      */
     private String performUserAuthenticationAndAuthorization(String username, String password)
-        throws NamingException
-    {
-        if(null == password || 0 == password.length())
+            throws NamingException {
+        if (null == password || 0 == password.length())
             throw new IllegalArgumentException("Empty password is prohibited");
 
         String userTemplate = getUserDNTemplate();
@@ -418,40 +383,40 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
         // TODO: Allow custom TLS configuration
 //        props.put("java.naming.ldap.factory.socket","com.eterra.security.authz.dao.CustomSSLSocketFactory" );
 
-        if(logger.isTraceEnabled()) {
-            logger.trace("Connecting to LDAP URL " + getURL() + " as " + dn);
-        }
+        logger.info("Connecting to LDAP URL " + getURL() + " as " + dn);
 
         LdapContext ctx = new InitialLdapContext(props, null);
         // throws AuthenticationException if bad password
         // throws javax.naming.CommunicationException comm problem
 
         SearchControls sc = new SearchControls();
-        sc.setReturningAttributes(new String[] { "dn", "cn" });
+        sc.setReturningAttributes(new String[]{"dn", "cn"});
         sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
         sc.setTimeLimit(10000);
 
         String filter = getGroupFilterTemplate();
         filter = filter.replace("{username}", username);
 
-        if(logger.isTraceEnabled()) {
-            logger.trace("Searching for groups using using filter=" + filter);
-        }
+        logger.info("Searching for groups using using filter=" + filter);
 
-        NamingEnumeration<SearchResult> results = ctx.search(getBaseDN(), filter, sc);
-
-        // We only care if at least one result is present
-        if(results.hasMore()) {
-            if(logger.isTraceEnabled()) {
-                while(results.hasMore()) {
-                    SearchResult result = results.next();
-                    logger.trace("LDAP User " + dn + " is in group " + result.getNameInNamespace());
+        if (!filter.isEmpty()) {
+            NamingEnumeration<SearchResult> results = ctx.search(getBaseDN(), filter, sc);
+            // We only care if at least one result is present
+            if (results.hasMore()) {
+                if (logger.isTraceEnabled()) {
+                    while (results.hasMore()) {
+                        SearchResult result = results.next();
+                        logger.trace("LDAP User " + dn + " is in group " + result.getNameInNamespace());
+                    }
                 }
-            }
 
-            return username;
+                return username;
+
+            } else {
+                throw new AuthenticationException("User is not in any required group");
+            }
         } else {
-            throw new AuthenticationException("User is not in any required group");
+            return username;
         }
     }
 }
