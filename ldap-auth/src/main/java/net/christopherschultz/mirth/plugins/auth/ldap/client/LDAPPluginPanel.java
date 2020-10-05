@@ -5,22 +5,25 @@ import com.mirth.connect.client.ui.Frame;
 import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
+import com.mirth.connect.client.ui.components.MirthTextField;
+import com.mirth.connect.plugins.SettingsPanelPlugin;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.util.Properties;
 
 import static net.christopherschultz.mirth.plugins.auth.ldap.Constants.*;
 
 public class LDAPPluginPanel extends AbstractSettingsPanel {
 
-    private final LDAPAuthenticatorConfigurationClientPlugin plugin;
+    private final SettingsPanelPlugin plugin;
     private final Frame parent;
 
-    public LDAPPluginPanel(String tabName, LDAPAuthenticatorConfigurationClientPlugin plugin) {
+    public LDAPPluginPanel(String tabName, SettingsPanelPlugin plugin) {
         super(tabName);
         this.plugin = plugin;
         this.parent = PlatformUI.MIRTH_FRAME;
@@ -167,38 +170,45 @@ public class LDAPPluginPanel extends AbstractSettingsPanel {
         mainPanel.setLayout(new MigLayout("hidemode 3, novisualpadding, insets 0", "12[right][left]"));
 
         mainPanel.add(new JLabel("LDAP URL:"));
-        urlTextField = new JTextField();
-        mainPanel.add(urlTextField, "wrap");
+        urlTextField = new MirthTextField();
+        mainPanel.add(urlTextField, "w 300!, wrap");
 
         mainPanel.add(new JLabel("User-dn-template:"));
-        userDnTemplateTextField = new JTextField();
-        mainPanel.add(userDnTemplateTextField, "w 75!, wrap");
+        userDnTemplateTextField = new MirthTextField();
+        userDnTemplateTextField.addActionListener(this::enableSaving);
+        mainPanel.add(userDnTemplateTextField, "w 300!, wrap");
 
         mainPanel.add(new JLabel("Group-filter:"));
-        groupFilterTextField = new JTextField();
-        mainPanel.add(groupFilterTextField, "w 75!, wrap");
+        groupFilterTextField = new MirthTextField();
+        groupFilterTextField.addActionListener(this::enableSaving);
+        mainPanel.add(groupFilterTextField, "w 150!, wrap");
 
         mainPanel.add(new JLabel("Base-dn:"));
-        baseDnTextField = new JTextField();
-        mainPanel.add(baseDnTextField, "w 75!, wrap");
+        baseDnTextField = new MirthTextField();
+        baseDnTextField.addActionListener(this::enableSaving);
+        mainPanel.add(baseDnTextField, "w 150!, wrap");
 
-        mainPanel.add(new JLabel("Retries"));
-        retriesTextField = new JTextField();
+        mainPanel.add(new JLabel("Retries:"));
+        retriesTextField = new MirthTextField();
+        retriesTextField.addActionListener(this::enableSaving);
         mainPanel.add(retriesTextField, "w 75!, wrap");
 
-        mainPanel.add(new JLabel("Retry-interval (ms)"));
-        retryIntervalTextField = new JTextField();
+        mainPanel.add(new JLabel("Retry-interval (ms):"));
+        retryIntervalTextField = new MirthTextField();
+        retryIntervalTextField.addActionListener(this::enableSaving);
         mainPanel.add(retryIntervalTextField, "w 75!, wrap");
 
-        mainPanel.add(new JLabel("Fallback auth:"), "gapleft 37");
+        mainPanel.add(new JLabel("Fallback auth:"));
         yesEnabledRadio = new MirthRadioButton("Yes");
         yesEnabledRadio.setFocusable(false);
         yesEnabledRadio.setBackground(Color.white);
+        yesEnabledRadio.addActionListener(this::enableSaving);
 
         noEnabledRadio = new MirthRadioButton("No");
         noEnabledRadio.setFocusable(false);
         noEnabledRadio.setBackground(Color.white);
         noEnabledRadio.setSelected(true);
+        noEnabledRadio.addActionListener(this::enableSaving);
 
         ButtonGroup enabledButtonGroup = new ButtonGroup();
         enabledButtonGroup.add(yesEnabledRadio);
@@ -210,6 +220,10 @@ public class LDAPPluginPanel extends AbstractSettingsPanel {
         add(mainPanel, "grow, sx, wrap");
         repaint();
 
+    }
+
+    private void enableSaving(ActionEvent actionEvent) {
+        setSaveEnabled(true);
     }
 
     private JPanel mainPanel;

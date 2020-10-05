@@ -45,9 +45,7 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
     private String _groupFilterTemplate;
     private int _retries;
     private long _retryInterval;
-    private boolean _fallbackToLocalAuthentication = false;
-
-    private boolean notInitializedYet = true;
+    private boolean _fallbackToLocalAuthentication = true;
     private Map<String, String> _usernameMap;
     private String _usernameTemplate;
 
@@ -97,9 +95,6 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
             }
         } catch (IOException ioe) {
             logger.error("Failed to read LDAP configuration from ldap.properties", ioe);
-        }
-        if (localProperties.size() != 0) {
-            notInitializedYet = false;
         }
         configure(localProperties);
     }
@@ -283,18 +278,6 @@ public class LDAPAuthenticatorPlugin implements AuthorizationPlugin, ServicePlug
      * {@link #getFallbackToLocalAuthentication()}.
      */
     public LoginStatus authorizeUser(String username, String plainPassword) throws ControllerException {
-        if(_fallbackToLocalAuthentication){
-            return null;
-        }
-        if (notInitializedYet) {
-            _fallbackToLocalAuthentication = true;
-            return new LoginStatus(
-                    LoginStatus.Status.FAIL,
-                    "LDAP is not configured yet. " +
-                            "Please login as admin and configure LDAP properties. " +
-                            "Falling back to mirth-user log-in"
-            );
-        }
         int tries = getRetries();
         long retryInterval = getRetryInterval();
 
